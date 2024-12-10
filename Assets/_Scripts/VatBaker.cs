@@ -10,93 +10,141 @@ public class VATBaker : MonoBehaviour
     [Header("Bake Settings")]
     public SkinnedMeshRenderer skinnedMeshRenderer;
     public GameObject animatedGameObject;
-    public AnimationClip animationClip;
+    public AnimationClip[] animationClips;
     public int frameRate = 30;     // Frames per second
 
     [Header("Output Settings")]
     public string outputPath = "Assets/VAT_Baked";
+    public bool generatePOTTexture = false; // Add this option for POT textures
+
+
+    public List<AnimationInfo> animationsInfo = new List<AnimationInfo>();
+
 
     [ContextMenu("Bake")]
     public Texture2D BakeVAT()
     {
-        if (!skinnedMeshRenderer || !animationClip)
+        if (!skinnedMeshRenderer || animationClips.Length == 0)
         {
-            Debug.LogError("Please assign a SkinnedMeshRenderer and an AnimationClip.");
+            Debug.LogError("Please assign a SkinnedMeshRenderer and at least one AnimationClip.");
             return null;
         }
 
         Mesh sharedMesh = skinnedMeshRenderer.sharedMesh;
+        if (sharedMesh == null)
+        {
+            Debug.LogError("SkinnedMeshRenderer does not have a shared mesh assigned.");
+            return null;
+        }
+
         int vertexCount = sharedMesh.vertexCount;
 
-        // Calculate texture dimensions
-        float clipLength = animationClip.length;
-        int frameCount = Mathf.CeilToInt(clipLength * frameRate);
-        int textureHeight = frameCount;
+        int totalFrames = 0;
+        foreach (var animation in animationClips)
+        {
+            float clipLength = animation.length;
+            int frameCount = Mathf.CeilToInt(clipLength * frameRate);
+            totalFrames += frameCount;
+        }
 
-        // Create the texture
-        Texture2D vatTexture = new Texture2D(vertexCount, textureHeight, TextureFormat.RGBAFloat, false);
-        vatTexture.filterMode = FilterMode.Point;
-        vatTexture.wrapMode = TextureWrapMode.Clamp;
+        // Ensure the dimensions are POT if required
+        int textureWidth = generatePOTTexture ? Mathf.NextPowerOfTwo(vertexCount) : vertexCount + 1;
+        int textureHeight = generatePOTTexture ? Mathf.NextPowerOfTwo(totalFrames) : totalFrames;
 
-        // Prepare baked mesh
+        Texture2D vatTexture = new Texture2D(textureWidth, textureHeight, TextureFormat.RGBAFloat, false)
+        {
+            filterMode = FilterMode.Point,
+            wrapMode = TextureWrapMode.Clamp
+        };
+
         Mesh bakedMesh = new Mesh();
         Vector3 minBounds = Vector3.positiveInfinity;
         Vector3 maxBounds = Vector3.negativeInfinity;
 
-        // First pass: Compute bounds across all frames to normalize positions
-        for (int frame = 0; frame < frameCount; frame++)
+        foreach (var animation in animationClips)
         {
-            float time = frame / (float)frameRate;
-            animationClip.SampleAnimation(animatedGameObject, time);
-            skinnedMeshRenderer.BakeMesh(bakedMesh);
-
-            foreach (Vector3 vertex in bakedMesh.vertices)
+            float clipLength = animation.length;
+            int frameCount = Mathf.CeilToInt(clipLength * frameRate);
+            for (int frame = 0; frame < frameCount; frame++)
             {
-                Vector3 localVertex = skinnedMeshRenderer.transform.InverseTransformPoint(vertex);
-                minBounds = Vector3.Min(minBounds, localVertex);
-                maxBounds = Vector3.Max(maxBounds, localVertex);
+                float time = frame / (float)frameRate;
+                animation.SampleAnimation(animatedGameObject, time);
+                skinnedMeshRenderer.rootBone.transform.localPosition = new Vector3(0, skinnedMeshRenderer.rootBone.transform.localPosition.y, 0);
+                skinnedMeshRenderer.BakeMesh(bakedMesh);
+
+                foreach (Vector3 vertex in bakedMesh.vertices)
+                {
+                    Vector3 localVertex = skinnedMeshRenderer.transform.InverseTransformPoint(vertex);
+                    minBounds = Vector3.Min(minBounds, localVertex);
+                    maxBounds = Vector3.Max(maxBounds, localVertex);
+                }
             }
         }
 
         Vector3 boundsSize = maxBounds - minBounds;
 
-        // Second pass: Bake data into the texture with normalized positions
-        for (int frame = 0; frame < frameCount; frame++)
+        int currentFrame = 0;
+        animationsInfo.Clear();
+
+        foreach (var animation in animationClips)
         {
-            float time = frame / (float)frameRate;
-            animationClip.SampleAnimation(animatedGameObject, time);
-            skinnedMeshRenderer.BakeMesh(bakedMesh);
+            float clipLength = animation.length;
+            int frameCount = Mathf.CeilToInt(clipLength * frameRate);
 
-            Vector3[] vertices = bakedMesh.vertices;
-
-            for (int vertex = 0; vertex < vertexCount; vertex++)
+            AnimationInfo metadata = new AnimationInfo
             {
-                // Normalize vertex positions to [0, 1]
-                Vector3 localVertex = skinnedMeshRenderer.transform.InverseTransformPoint(vertices[vertex]);
-                Vector3 normalizedVertex = new Vector3(
-                    (localVertex.x - minBounds.x) / boundsSize.x,
-                    (localVertex.y - minBounds.y) / boundsSize.y,
-                    (localVertex.z - minBounds.z) / boundsSize.z
-                );
+                name = animation.name,
+                startFrame = currentFrame,
+                endFrame = currentFrame + frameCount,
+            };
+            animationsInfo.Add(metadata);
 
-                // Write to texture: Columns are vertices, rows are frames
-                vatTexture.SetPixel(vertex, frame, new Color(normalizedVertex.x, normalizedVertex.y, normalizedVertex.z, 1.0f));
+            for (int frame = 0; frame < frameCount; frame++)
+            {
+                float time = frame / (float)frameRate;
+                animation.SampleAnimation(animatedGameObject, time);
+                skinnedMeshRenderer.rootBone.transform.localPosition = new Vector3(0, skinnedMeshRenderer.rootBone.transform.localPosition.y, 0);
+                skinnedMeshRenderer.BakeMesh(bakedMesh);
+
+                Vector3[] vertices = bakedMesh.vertices;
+
+                for (int vertex = 0; vertex < vertexCount; vertex++)
+                {
+                    Vector3 localVertex = skinnedMeshRenderer.transform.InverseTransformPoint(vertices[vertex]);
+                    Vector3 normalizedVertex = new Vector3(
+                        (localVertex.x - minBounds.x) / boundsSize.x,
+                        (localVertex.y - minBounds.y) / boundsSize.y,
+                        (localVertex.z - minBounds.z) / boundsSize.z
+                    );
+
+                    // Write to texture: Columns are vertices, rows are frames
+                    if (vertex < textureWidth && currentFrame < textureHeight)
+                    {
+                        vatTexture.SetPixel(vertex, currentFrame, new Color(normalizedVertex.x, normalizedVertex.y, normalizedVertex.z, 1.0f));
+                    }
+                }
+
+                currentFrame++;
             }
         }
 
-        // Apply changes and save
         vatTexture.Apply();
 
 #if UNITY_EDITOR
-        string filePath = Path.Combine(outputPath, $"{animationClip.name}_VAT_{vertexCount}x{textureHeight}.png");
-        Directory.CreateDirectory(outputPath);
-        File.WriteAllBytes(filePath, vatTexture.EncodeToPNG());
-        Debug.Log($"VAT texture saved to {filePath}");
-        Debug.Log($"min bounds: {minBounds} max bounds: {maxBounds}");
+        if (!Directory.Exists(outputPath))
+        {
+            Directory.CreateDirectory(outputPath);
+        }
 
-        // Set import settings for the texture
+        string baseName = $"{sharedMesh.name}_VAT_{textureWidth}x{textureHeight}";
+
+        string textureFileName = $"{baseName}.png";
+        string textureFilePath = Path.Combine(outputPath, textureFileName);
+        File.WriteAllBytes(textureFilePath, vatTexture.EncodeToPNG());
+        Debug.Log($"VAT texture saved to {textureFilePath}");
+
         AssetDatabase.Refresh();
-        TextureImporter textureImporter = AssetImporter.GetAtPath(filePath) as TextureImporter;
+        TextureImporter textureImporter = AssetImporter.GetAtPath(textureFilePath) as TextureImporter;
 
         if (textureImporter != null)
         {
@@ -104,14 +152,31 @@ public class VATBaker : MonoBehaviour
             textureImporter.textureCompression = TextureImporterCompression.Uncompressed;
             textureImporter.filterMode = FilterMode.Point;
             textureImporter.wrapMode = TextureWrapMode.Clamp;
-            textureImporter.sRGBTexture = false; 
-            textureImporter.maxTextureSize =  8192;
+            textureImporter.sRGBTexture = false;
+            textureImporter.maxTextureSize = Mathf.NextPowerOfTwo(Mathf.Max(textureWidth, textureHeight));
             textureImporter.npotScale = TextureImporterNPOTScale.None;
             textureImporter.mipmapEnabled = false;
 
             EditorUtility.SetDirty(textureImporter);
             textureImporter.SaveAndReimport();
         }
+#endif
+
+        VATAnimationData animationData = ScriptableObject.CreateInstance<VATAnimationData>();
+        animationData.VATTexture = vatTexture;
+        animationData.minBounds = minBounds;
+        animationData.maxBounds = maxBounds;
+        animationData.animations = animationsInfo.ToArray();
+#if UNITY_EDITOR
+        // Save the ScriptableObject as an asset
+        string assetFileName = $"{sharedMesh.name}_VATAnimationData.asset";
+        string assetFilePath = Path.Combine(outputPath, assetFileName);
+
+        AssetDatabase.CreateAsset(animationData, assetFilePath);
+        Debug.Log($"VATAnimationData saved to {assetFilePath}");
+
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
 #endif
 
         return vatTexture;
