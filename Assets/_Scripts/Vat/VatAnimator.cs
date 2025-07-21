@@ -47,8 +47,7 @@ public class VatAnimator : MonoBehaviour
         float currentOffset = propertyBlock.GetFloat(_offsetRef);
 
         // Switch to the blending material
-        vatRenderer.material = blendingMat;
-
+        vatRenderer.sharedMaterial = blendingMat;
 
         AnimationInfo nextAnimationInfo = animationData.animations[animationIndex];
         AnimationInfo currentAnimationInfo = animationData.animations[currentAnimationIndex];
@@ -56,7 +55,10 @@ public class VatAnimator : MonoBehaviour
         // Set the current animation frames on the blending mat
         propertyBlock.SetFloat(_startFrameRef, currentAnimationInfo.startFrame);
         propertyBlock.SetFloat(_endFrameRef, currentAnimationInfo.endFrame);
+
+
         propertyBlock.SetFloat(_offsetRef, currentOffset);
+
 
         int vatHeight = vatRenderer.sharedMaterial.GetTexture(_VatPositionRef).height;
 
@@ -96,6 +98,7 @@ public class VatAnimator : MonoBehaviour
 
 
         propertyBlock.SetFloat(_offsetRef, offset);
+
 
         vatRenderer.SetPropertyBlock(propertyBlock);
         currentAnimationIndex = animationIndex;

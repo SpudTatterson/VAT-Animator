@@ -7,7 +7,7 @@ public class VATAnimationData : ScriptableObject
     public Texture2D VATTexture;
     public Vector3 minBounds;
     public Vector3 maxBounds;
-    
+
 }
 
 [System.Serializable]

@@ -11,6 +11,10 @@ public class VatExampleCalculation : MonoBehaviour
 
     float vertexID = 500;
 
+    void Awake()
+    {
+        Cursor.lockState = CursorLockMode.Locked;
+    }
     private void CalculateVertexIndex()
     {
         float textureWidth = 8048;

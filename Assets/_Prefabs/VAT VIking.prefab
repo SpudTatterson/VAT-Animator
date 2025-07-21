@@ -40,7 +40,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6272298915458036090}
-  m_Mesh: {fileID: -1057196576350720953, guid: 4ace649e942ea2849845d148063a5970, type: 3}
+  m_Mesh: {fileID: -1057196576350720953, guid: 1554b9ed7e4d169479f7d4f4b4fd73de, type: 3}
 --- !u!23 &3134769960323871941
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -96,6 +96,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2760657924665173123}
   - component: {fileID: 6328913482671550873}
+  - component: {fileID: 3764147835376005346}
   m_Layer: 0
   m_Name: VAT VIking
   m_TagString: Untagged
@@ -134,3 +135,26 @@ MonoBehaviour:
   vatRenderer: {fileID: 3134769960323871941}
   animationData: {fileID: 11400000, guid: d6dfa4e29f78b0d4c96a59dc558c81b6, type: 2}
   blendingMat: {fileID: 2100000, guid: 155da011fd7e40248b61139f49309266, type: 2}
+--- !u!136 &3764147835376005346
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6517259447279051822}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.3567958
+  m_Height: 1.7899326
+  m_Direction: 1
+  m_Center: {x: 0, y: 0.85535604, z: 0.14320421}

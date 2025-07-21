@@ -9,7 +9,7 @@ public class VATBaker : MonoBehaviour
 {
     [Header("Bake Settings")]
     public SkinnedMeshRenderer skinnedMeshRenderer;
-    public GameObject animatedGameObject;
+    public Animator animator;
     public AnimationClip[] animationClips;
     public int frameRate = 30;     // Frames per second
 
@@ -68,7 +68,7 @@ public class VATBaker : MonoBehaviour
             for (int frame = 0; frame < frameCount; frame++)
             {
                 float time = frame / (float)frameRate;
-                animation.SampleAnimation(animatedGameObject, time);
+                animation.SampleAnimation(animator.gameObject, time);
                 skinnedMeshRenderer.rootBone.transform.localPosition = new Vector3(0, skinnedMeshRenderer.rootBone.transform.localPosition.y, 0);
                 skinnedMeshRenderer.BakeMesh(bakedMesh);
 
@@ -102,7 +102,7 @@ public class VATBaker : MonoBehaviour
             for (int frame = 0; frame < frameCount; frame++)
             {
                 float time = frame / (float)frameRate;
-                animation.SampleAnimation(animatedGameObject, time);
+                animation.SampleAnimation(animator.gameObject, time);
                 skinnedMeshRenderer.rootBone.transform.localPosition = new Vector3(0, skinnedMeshRenderer.rootBone.transform.localPosition.y, 0);
                 skinnedMeshRenderer.BakeMesh(bakedMesh);
 
@@ -156,18 +156,26 @@ public class VATBaker : MonoBehaviour
             textureImporter.maxTextureSize = Mathf.NextPowerOfTwo(Mathf.Max(textureWidth, textureHeight));
             textureImporter.npotScale = TextureImporterNPOTScale.None;
             textureImporter.mipmapEnabled = false;
+            textureImporter.alphaSource = TextureImporterAlphaSource.None;
 
             EditorUtility.SetDirty(textureImporter);
             textureImporter.SaveAndReimport();
         }
-#endif
+        Texture2D savedTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(textureFilePath);
+
+
+        if (savedTexture == null)
+        {
+            Debug.LogError("Failed to load the saved texture asset. Ensure the file path is correct.");
+            return null;
+        }
+
 
         VATAnimationData animationData = ScriptableObject.CreateInstance<VATAnimationData>();
-        animationData.VATTexture = vatTexture;
+        animationData.VATTexture = savedTexture;
         animationData.minBounds = minBounds;
         animationData.maxBounds = maxBounds;
         animationData.animations = animationsInfo.ToArray();
-#if UNITY_EDITOR
         // Save the ScriptableObject as an asset
         string assetFileName = $"{sharedMesh.name}_VATAnimationData.asset";
         string assetFilePath = Path.Combine(outputPath, assetFileName);

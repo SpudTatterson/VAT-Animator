@@ -10,29 +10,24 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f563f79058c46734ebaacea254c2aab8, type: 3}
-  m_Name: Character_Viking_Warrior_02.001_VATAnimationData
+  m_Name: Character_Viking_Warrior_02 LOD_VATAnimationData
   m_EditorClassIdentifier: 
   animations:
   - name: Walk
     startFrame: 0
     endFrame: 33
-    resetOffset: 1
   - name: Run
     startFrame: 33
     endFrame: 55
-    resetOffset: 1
   - name: Slash
     startFrame: 55
     endFrame: 102
-    resetOffset: 1
   - name: Slash2
     startFrame: 102
     endFrame: 148
-    resetOffset: 1
   - name: Death
     startFrame: 148
     endFrame: 218
-    resetOffset: 0
-  VATTexture: {fileID: 0}
-  minBounds: {x: -0.9127868, y: -0.06993566, z: -0.9176142}
-  maxBounds: {x: 1.126989, y: 1.896501, z: 1.06845}
+  VATTexture: {fileID: 2800000, guid: 2cc1073915df143448e0b592bb0e7966, type: 3}
+  minBounds: {x: -0.7565102, y: -0.035353832, z: -0.87166435}
+  maxBounds: {x: 1.0921179, y: 0.3323511, z: 0.8620816}
